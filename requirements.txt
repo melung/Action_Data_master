@@ -1,0 +1,7 @@
+mlsocket
+multiprocess
+argparse
+numpy
+matplotlib
+scipy
+keyboard
