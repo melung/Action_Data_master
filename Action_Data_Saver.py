@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
             try:
                 subject = int(input("Subject num : "))
-            except:
+            except Exception:
                 print("That's not a valid option!")
             try:
                 action = int(input("Select Action number : "))
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                     break
                 else:
                     print("Wrong Range")
-            except:
+            except Exception:
                 print("That's not a valid option!")
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
