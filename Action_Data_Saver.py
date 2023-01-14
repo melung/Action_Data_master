@@ -8,13 +8,31 @@ import timeit
 import time
 import os
 import keyboard
+import tkinter
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
-HOST = '169.254.164.143'#Master 컴퓨터 ip
-CLIENTS_LIST = ['169.254.164.144', '169.254.164.145','169.254.164.146'] #slave 컴퓨터 IP EX) 3개 컴퓨터 이용시 [A, B, C]
-Port = [5555, 6666, 7777] #slave 컴퓨터마다 통신할 port 지정 EX) 3개 컴퓨터 이용시 [가, 나, 다]
-num_com = 3 #slave 컴퓨터개수
+
+
+#HOST = '169.254.164.143'#Master 컴퓨터 ip
+HOST = '192.168.0.5'#Master 컴퓨터 ip
+
+#CLIENTS_LIST = ['169.254.164.144', '169.254.164.145','169.254.164.146'] #slave 컴퓨터 IP EX) 3개 컴퓨터 이용시 [A, B, C]
+CLIENTS_LIST = ['192.168.0.5', '169.254.164.145','169.254.164.146'] #slave 컴퓨터 IP EX) 3개 컴퓨터 이용시 [A, B, C]
+
+
+Port = [1144, 1145, 1146] #slave 컴퓨터마다 통신할 port 지정 EX) 3개 컴퓨터 이용시 [가, 나, 다]
+start_port = 12345
+end_port = 4444
+
+
+num_com = 1 #slave 컴퓨터개수
 num_source = 2 #한 slave 컴퓨터에 연결된 kinect 개수
 fps_cons = 20 #fps제한 (컴퓨터에 따라 다를 수 있습니다. 적절히 조절 slave 컴퓨터의 kinect fps와 같도록)
+vis = True
+
 
 Vive_ip = '192.168.0.9'
 Vive_port = 1234
@@ -101,18 +119,39 @@ if __name__ == '__main__':
                                                              vive_joints.dtype])
 
     for ii in range(num_com):
+        locals()[f"com{ii}"].daemon = True
         locals()[f"com{ii}"].start()
+    vive_com.daemon = True
     vive_com.start()
 
+    b = input("Press Enter to start")
+
+    for ii in range(num_com):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CLIENTS_LIST[ii], start_port))
+        s.sendto(str(b).encode(), (CLIENTS_LIST[ii], start_port))
+        s.close()
+
+
+    End = False
     while True:
         for i in range(len(action_list)):
             print("Action" + format(i, "02") + " : " + action_list[i])
         while True:
-
-            try:
-                subject = int(input("Subject num : "))
-            except Exception:
-                print("That's not a valid option!")
+            ss = input("Subject num or e to Stop: ")
+            if ss == 'e':
+                print('End')
+                for ii in range(num_com):
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((CLIENTS_LIST[ii], end_port))
+                    s.close()
+                End = True
+                break
+            else:
+                try:
+                    subject = int(ss)
+                except Exception:
+                    print("That's not a valid option!")
             try:
                 action = int(input("Select Action number : "))
                 if action < len(action_list) and action >= 0:
@@ -121,41 +160,15 @@ if __name__ == '__main__':
                     print("Wrong Range")
             except Exception:
                 print("That's not a valid option!")
-
-        # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        # s.sendto(str(action).encode(), ('255.255.255.255', 12345))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.144', 12347))
-        s.sendto(str(action).encode(), ('169.254.164.144', 12347))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.145', 12346))
-        s.sendto(str(action).encode(), ('169.254.164.145', 12346))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.146', 12345))
-        s.sendto(str(action).encode(), ('169.254.164.146', 12345))
-
-        b = input("Press a to start : ")
-        # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        # s.sendto(b.encode(), ('255.255.255.255', 12345))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.144', 12357))
-        s.sendto(b.encode(), ('169.254.164.144', 12347))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.145', 12356))
-        s.sendto(b.encode(), ('169.254.164.145', 12346))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('169.254.164.146', 12355))
-        s.sendto(b.encode(), ('169.254.164.146', 12345))
-
+        if End == True:
+            break
+        print('Save Data Subject : '+ str(subject) +' Action : '+ str(action))
+        b = input("Press a to Save Data")
         if b == "a":
             print("Start")
-
         else:
             print("Reselect Action")
             continue
-
 
         Fused_skel = []
         for ii in range(num_com):
@@ -171,7 +184,13 @@ if __name__ == '__main__':
                 os.makedirs(
                     "./Result/csv/S" + format(subject, "03") + "C" + format(ii, "03") + "P000R000A" + format(action,
                                                                                                              "03"))
-
+        if vis:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.set_xlim(-5, 5)
+            ax.set_ylim(-5, 5)
+            ax.set_zlim(-7, 7)
+            ax.set_box_aspect((2, 2, 3))
         k = 0
         while True:
             if k == 0:
@@ -209,8 +228,17 @@ if __name__ == '__main__':
                             round(p[i, 2], 6)) + " " + "0 0 0 0 0 0 0 0 0\n")
 
             k += 1
+            if vis:
+
+                points = ax.scatter(p[:, 0], p[:, 1], p[:, 2], c='b')
+                plt.pause(0.001)
+                plt.draw()
+                points.remove()
+
+
+
             terminate_t = timeit.default_timer()
-            delay_t = (1 / (fps_cons+ 10)) - (terminate_t - start_t)
+            delay_t = (1 / fps_cons) - (terminate_t - start_t)
             if delay_t > 0:
                 time.sleep(delay_t)
             terminate_t = timeit.default_timer()
@@ -218,18 +246,13 @@ if __name__ == '__main__':
             print("FPS: " + str(FPS))
             print("Frame: " + str(k))
 
-            #if k>300:
             if keyboard.is_pressed("q"):
                 for ii in range(num_com):
                     locals()[f"f{ii}"].write(str(k - 2))
                 for ii in range(num_com):
                     locals()[f"f{ii}"].close
-
+                plt.close()
                 print("Stop")
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                s.sendto(str(1).encode(), ('255.255.255.255', 4444))
-                flag = True
                 break
 
 
