@@ -9,12 +9,12 @@ import time
 import os
 import keyboard
 
-HOST = '192.168.0.5'#Master 컴퓨터 ip
-CLIENTS_LIST = ['192.168.0.5', '192.168.0.15'] #slave 컴퓨터 IP EX) 3개 컴퓨터 이용시 [A, B, C]
-Port = [5555, 7777] #slave 컴퓨터마다 통신할 port 지정 EX) 3개 컴퓨터 이용시 [가, 나, 다]
-num_com = 1 #slave 컴퓨터개수
+HOST = '169.254.164.143'#Master 컴퓨터 ip
+CLIENTS_LIST = ['169.254.164.144', '169.254.164.145','169.254.164.146'] #slave 컴퓨터 IP EX) 3개 컴퓨터 이용시 [A, B, C]
+Port = [5555, 6666, 7777] #slave 컴퓨터마다 통신할 port 지정 EX) 3개 컴퓨터 이용시 [가, 나, 다]
+num_com = 3 #slave 컴퓨터개수
 num_source = 2 #한 slave 컴퓨터에 연결된 kinect 개수
-fps_cons = 30 #fps제한 (컴퓨터에 따라 다를 수 있습니다. 적절히 조절 slave 컴퓨터의 kinect fps와 같도록)
+fps_cons = 20 #fps제한 (컴퓨터에 따라 다를 수 있습니다. 적절히 조절 slave 컴퓨터의 kinect fps와 같도록)
 
 Vive_ip = '192.168.0.9'
 Vive_port = 1234
@@ -122,14 +122,33 @@ if __name__ == '__main__':
             except Exception:
                 print("That's not a valid option!")
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.sendto(str(action).encode(), ('255.255.255.255', 12345))
+        # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        # s.sendto(str(action).encode(), ('255.255.255.255', 12345))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.144', 12347))
+        s.sendto(str(action).encode(), ('169.254.164.144', 12347))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.145', 12346))
+        s.sendto(str(action).encode(), ('169.254.164.145', 12346))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.146', 12345))
+        s.sendto(str(action).encode(), ('169.254.164.146', 12345))
 
         b = input("Press a to start : ")
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.sendto(b.encode(), ('255.255.255.255', 12345))
+        # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        # s.sendto(b.encode(), ('255.255.255.255', 12345))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.144', 12357))
+        s.sendto(b.encode(), ('169.254.164.144', 12347))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.145', 12356))
+        s.sendto(b.encode(), ('169.254.164.145', 12346))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('169.254.164.146', 12355))
+        s.sendto(b.encode(), ('169.254.164.146', 12345))
+
         if b == "a":
             print("Start")
 
